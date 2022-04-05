@@ -1,25 +1,46 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useState } from "react";
+import Item from "./components/Item";
 
-function App() {
+export default function App() {
+  const [rssUrl, setRssUrl] = useState("");
+  const [items, setItems] = useState([]);
+
+  const getRss = async (e) => {
+    e.preventDefault();
+    const urlRegex =
+      /(http|ftp|https):\/\/[\w-]+(\.[\w-]+)+([\w.,@?^=%&amp;:\/~+#-]*[\w@?^=%&amp;\/~+#-])?/;
+    if (!urlRegex.test(rssUrl)) {
+      return;
+    }
+    const res = await fetch(`https://api.allorigins.win/get?url=${rssUrl}`);
+    const { contents } = await res.json();
+    const feed = new window.DOMParser().parseFromString(contents, "text/xml");
+    const items = feed.querySelectorAll("item");
+    const feedItems = [...items].map((el) => ({
+      link: el.querySelector("link").innerHTML,
+      title: el.querySelector("title").innerHTML,
+      author: el.querySelector("author").innerHTML,
+    }));
+    setItems(feedItems);
+  };
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <form onSubmit={getRss}>
+        <div>
+          <label> rss url</label>
+          <br />
+          <input onChange={(e) => setRssUrl(e.target.value)} value={rssUrl} />
+        </div>
+        <input type="submit" />
+      </form>
+      {items.map((item) => {
+        return (
+          <React.Fragment>
+            <Item title={item.title} author={item.author} link={item.link} />
+          </React.Fragment>
+        );
+      })}
     </div>
   );
 }
-
-export default App;
